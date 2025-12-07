@@ -1,10 +1,14 @@
 import os
 import sqlite3
+import subprocess
+import sys
+from pathlib import Path
 
 import pandas as pd
 import streamlit as st
 
-DB_NAME = "data.db"
+DB_PATH = Path(__file__).with_name("data.db")
+SYNC_SCRIPT = Path(__file__).with_name("01_sync_data.py")
 
 # 設定網頁標題與寬度佈局
 st.set_page_config(page_title=" 農業氣象週報", page_icon="🌾", layout="wide")
@@ -25,10 +29,42 @@ st.markdown("資料來源：**CWA F-A0010-001** | 資料庫：**SQLite (data.db)
 
 ALL_OPTION = "全部地區"
 
-if not os.path.exists(DB_NAME):
+
+def ensure_database() -> bool:
+    if DB_PATH.exists():
+        return True
+    if not SYNC_SCRIPT.exists():
+        st.error("❌ 找不到 data.db，且缺少 01_sync_data.py。請確認專案檔案。")
+        return False
+    with st.spinner("首次使用，正在建立資料庫..."):
+        try:
+            result = subprocess.run(
+                [sys.executable, str(SYNC_SCRIPT)],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            if result.stdout:
+                st.caption(result.stdout)
+            if result.stderr:
+                st.caption(result.stderr)
+        except subprocess.CalledProcessError as exc:
+            st.error("自動同步資料失敗。請手動執行 01_sync_data.py。")
+            if exc.stdout:
+                st.error(exc.stdout)
+            if exc.stderr:
+                st.error(exc.stderr)
+            return False
+    return DB_PATH.exists()
+
+
+if not ensure_database():
+    st.stop()
+
+if not os.path.exists(DB_PATH):
     st.error("❌ 找不到 data.db，請先執行 01_sync_data.py")
 else:
-    conn = sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect(DB_PATH)
     # 關鍵修正：確保選取所有欄位，包含 forecast_date
     df = pd.read_sql_query("SELECT * FROM weather", conn)
     conn.close()
