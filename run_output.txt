@@ -1,0 +1,42 @@
+Python 3.13.9
+
+Collecting requests
+  Downloading requests-2.32.5-py3-none-any.whl.metadata (4.9 kB)
+Collecting charset_normalizer<4,>=2 (from requests)
+  Downloading charset_normalizer-3.4.4-cp313-cp313-win_amd64.whl.metadata (38 kB)
+Collecting idna<4,>=2.5 (from requests)
+  Downloading idna-3.11-py3-none-any.whl.metadata (8.4 kB)
+Collecting urllib3<3,>=1.21.1 (from requests)
+  Downloading urllib3-2.5.0-py3-none-any.whl.metadata (6.5 kB)
+Collecting certifi>=2017.4.17 (from requests)
+  Downloading certifi-2025.11.12-py3-none-any.whl.metadata (2.5 kB)
+Downloading requests-2.32.5-py3-none-any.whl (64 kB)
+Downloading charset_normalizer-3.4.4-cp313-cp313-win_amd64.whl (107 kB)
+Downloading idna-3.11-py3-none-any.whl (71 kB)
+Downloading urllib3-2.5.0-py3-none-any.whl (129 kB)
+Downloading certifi-2025.11.12-py3-none-any.whl (159 kB)
+Installing collected packages: urllib3, idna, charset_normalizer, certifi, requests
+Successfully installed certifi-2025.11.12 charset_normalizer-3.4.4 idna-3.11 requests-2.32.5 urllib3-2.5.0
+
+[notice] A new release of pip is available: 25.2 -> 25.3
+[notice] To update, run: python.exe -m pip install --upgrade pip
+
+正在連線至 CWA API... (https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-C0032-001?Authorization=CWA-5D2BD77F-1B94-40C6-A752-E8DF4FA8D92F&format=JSON)
+連線發生錯誤: HTTPSConnectionPool(host='opendata.cwa.gov.tw', port=443): Max retries exceeded with url: /api/v1/rest/datastore/F-C0032-001?Authorization=CWA-5D2BD77F-1B94-40C6-A752-E8DF4FA8D92F&format=JSON (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Missing Subject Key Identifier (_ssl.c:1032)')))
+
+--- re-run with CWA_INSECURE=1 (temporary insecure mode) ---
+正在連線至 CWA API... (https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-C0032-001?Authorization=CWA-5D2BD77F-1B94-40C6-A752-E8DF4FA8D92F&format=JSON)
+WARNING: Unverified HTTPS request (InsecureRequestWarning) from urllib3
+取得資料成功！開始解析...
+------------------------------------------------------------
+城市     | 天氣         | 溫度       | 降雨     | 時間
+------------------------------------------------------------
+嘉義縣    | 晴時多雲       | 18~23°C | 20%   | 12-03 06:00
+嘉義縣    | 晴時多雲       | 15~19°C | 10%   | 12-03 18:00
+嘉義縣    | 晴時多雲       | 15~24°C | 10%   | 12-04 06:00
+新北市    | 陰有雨        | 17~20°C | 70%   | 12-03 06:00
+新北市    | 陰短暫雨       | 16~17°C | 30%   | 12-03 18:00
+... (更多資料)
+------------------------------------------------------------
+
+✅ 資料已完整存檔至: weather_forecast.csv

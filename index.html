@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台灣天氣預報儀表板</title>
+    <style>
+        /* 全局設定 */
+        body {
+            font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+            background: linear-gradient(135deg, #1c92d2 0%, #f2fcfe 100%); /* 仿氣象局藍天背景 */
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        /* 標題區塊 */
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        header h1 { margin: 0; font-size: 2.5rem; }
+        header p { margin-top: 10px; opacity: 0.9; }
+
+        /* 卡片容器 (Grid 排版) */
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* 天氣卡片樣式 */
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            border-top: 6px solid #ddd; /* 預設邊框顏色 */
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+        }
+
+        /* 根據天氣類型的樣式裝飾 */
+        .card.sunny { border-top-color: #f39c12; } /* 晴天橘 */
+        .card.rainy { border-top-color: #3498db; } /* 雨天藍 */
+        .card.cloudy { border-top-color: #95a5a6; } /* 陰天灰 */
+
+        /* 卡片內容排版 */
+        .city-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+
+        .weather-icon {
+            font-size: 4rem;
+            margin: 10px 0;
+            display: inline-block;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+        }
+
+        .weather-desc {
+            font-size: 1.1rem;
+            color: #555;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .temp-range {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #e67e22; /* 溫度顏色 */
+            margin-bottom: 8px;
+        }
+
+        .pop-rate {
+            font-size: 0.9rem;
+            color: #1a5f7a;
+            background-color: #e0f2fe;
+            padding: 4px 12px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        .time-info {
+            font-size: 0.8rem;
+            color: #999;
+            margin-top: 15px;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+
+        /* 讀取中與錯誤訊息 */
+        #status-msg {
+            text-align: center;
+            font-size: 1.5rem;
+            color: white;
+            margin-top: 50px;
+            font-weight: bold;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        /* 按鈕樣式 */
+        .btn-refresh {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 25px;
+            font-size: 1rem;
+            background-color: white;
+            color: #1c92d2;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .btn-refresh:hover {
+            transform: scale(1.05);
+            background-color: #f0f8ff;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🌤️ 台灣天氣預報儀表板</h1>
+        <p>資料來源：本地 SQLite 資料庫 (F-C0032-001)</p>
+    </header>
+
+    <!-- 重新整理按鈕 -->
+    <button class="btn-refresh" onclick="location.reload()">🔄 重新載入頁面</button>
+
+    <!-- 狀態訊息 -->
+    <div id="status-msg">正在連線至 Python 後端讀取資料庫...</div>
+
+    <!-- 卡片容器 -->
+    <div class="container" id="weather-grid"></div>
+
+    <script>
+        // 設定 Python 後端 API 位址
+        const API_URL = 'http://127.0.0.1:5000/api/forecast';
+
+        async function fetchWeather() {
+            const grid = document.getElementById('weather-grid');
+            const statusMsg = document.getElementById('status-msg');
+
+            try {
+                const response = await fetch(API_URL);
+                
+                // 檢查是否成功
+                if (!response.ok) {
+                    throw new Error(`伺服器錯誤: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // 檢查是否有錯誤訊息 (例如資料庫為空)
+                if (data.error) {
+                    statusMsg.innerHTML = `⚠️ ${data.error}<br><small>請先執行 python init_db.py</small>`;
+                    return;
+                }
+
+                // 清空狀態訊息與容器
+                statusMsg.style.display = 'none';
+                grid.innerHTML = '';
+
+                // 遍歷每一筆資料並建立卡片
+                data.forEach(item => {
+                    const card = createCard(item);
+                    grid.appendChild(card);
+                });
+
+            } catch (error) {
+                console.error("Fetch Error:", error);
+                statusMsg.innerHTML = `❌ 無法連線到伺服器<br><small>請確認 python app.py 已啟動</small>`;
+                statusMsg.style.color = '#ff6b6b';
+            }
+        }
+
+        // 建立卡片 HTML 的函數
+        function createCard(data) {
+            const card = document.createElement('div');
+            
+            // 根據天氣狀況決定圖示與樣式
+            let icon = '☁️';
+            let styleClass = 'cloudy';
+            const wx = data.wx;
+
+            if (wx.includes('晴')) {
+                icon = '☀️';
+                styleClass = 'sunny';
+            } else if (wx.includes('雨')) {
+                icon = '🌧️';
+                styleClass = 'rainy';
+            } else if (wx.includes('雷')) {
+                icon = '⚡';
+                styleClass = 'rainy';
+            }
+
+            card.className = `card ${styleClass}`;
+            
+            card.innerHTML = `
+                <div class="city-name">${data.city}</div>
+                <div class="weather-icon">${icon}</div>
+                <div class="weather-desc">${wx}</div>
+                <div class="temp-range">${data.min_t}°C ~ ${data.max_t}°C</div>
+                <div class="pop-rate">☔ 降雨機率 ${data.pop}%</div>
+                <div class="time-info">預報時段: ${data.time_desc}</div>
+            `;
+            
+            return card;
+        }
+
+        // 頁面載入後自動執行
+        fetchWeather();
+    </script>
+</body>
+</html>
